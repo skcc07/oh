@@ -1,6 +1,7 @@
 ## 참고 URL
-[msaez(http://msaez.io)](http://msaez.io/)
-
+[https://github.com/event-storming/docs](https://github.com/event-storming/docs)
+[http://msaschool.io](http://msaschool.io)
+[http://msaez.io](http://msaez.io)
 
 ## 처음에만!
 ```sh
