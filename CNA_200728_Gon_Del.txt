@@ -1,0 +1,26 @@
+user10 skccadmin1234! http://kcloud-academy.signin.aws.amazon.com/console  ap-northeast-2
+
+// aws configure 설정할때
+ 1. iam 드간다
+ 2. 아래 정보 확인한다
+    - Access Key: 
+    - Secrete Access Key: 
+    - Region: ap-northeast-2
+
+eksctl create cluster --name user10-cluster --version 1.15 --nodegroup-name standard-workers --node-type t3.medium --nodes 3 --nodes-min 1 --nodes-max 3
+
+//URI 정보
+052937454741.dkr.ecr.ap-northeast-2.amazonaws.com/
+
+//docker에 Build
+docker build -t 052937454741.dkr.ecr.ap-northeast-2.amazonaws.com/user10-cna-order:v1 . 
+
+// AWS 컨테이너 레지스트리 생성
+aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 052937454741.dkr.ecr.ap-northeast-2.amazonaws.com/
+
+//docker에 push
+docker push 052937454741.dkr.ecr.ap-northeast-2.amazonaws.com/user10-cna-order:v1
+
+git remote add origin https://github.com/yamapluto/cna-delivery.git
+git commit -m "first commit"
+git push -u origin master

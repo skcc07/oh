@@ -1,0 +1,20 @@
+https://github.com/event-storming/docs
+http://msaschool.io
+http://msaez.io
+
+netstat -ano | findstr "PID :808"
+taskkill /pid 2140 /f
+
+@PostPersist : 저장 후
+@PrePersist : 저장 전
+
+@PostUpdate : 수정 후
+@PreUpdate  : 수정 전
+
+@Post : 삭제 후
+@Pre : 삭제 전
+
+zookeeper-server-start.bat ../../config/zookeeper.properties
+
+// kafka에서 로그 보는 법
+kafka-console-consumer.bat --bootstrap-server http://localhost:9092 --topic shop --from-beginning

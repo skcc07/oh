@@ -1,0 +1,85 @@
+[개발한 파일 git에 올리고 이미지 만들기]
+ - 로컬에 있는 파일을 git에 올리고 우분투에서 내림
+ - AWS에 이미지 올릴 저장소 생성
+ - 이미지 올리기(메이븐 클린, 패키지, 도커이미지 빌드, 도커 이미지 푸시)
+ * 내 ECR 레파짓또리: 052937454741.dkr.ecr.ap-northeast-2.amazonaws.com/
+
+1. 깃에 올리기
+   파일이 있는 폴더에 가기
+   gin init
+   git remote add origin https://github.com/yamapluto/cna-mypage.git (git remote remove orgin)
+   git add .
+   git commit -m "first commit"
+   git push -u origin master
+   // git config --list
+
+2. 우분투 가서 받아오기
+   git clone https://github.com/yamapluto/cna-mypage.git
+
+3. AWS가서 레파짓토리 생성
+   폴더 생성: cna-delivery
+   052937454741.dkr.ecr.ap-northeast-2.amazonaws.com/
+
+4. 우분투에서 해당 실시
+   해당 폴더에 mvn clean
+   해당 폴더에 mvn package
+
+5. 도커에 이미지 
+// AWS 컨테이너 레지스트리 생성
+   aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 052937454741.dkr.ecr.ap-northeast-2.amazonaws.com/  (계정 끊겨서 안될때!!!)
+   도커에 빌드  docker build -t 052937454741.dkr.ecr.ap-northeast-2.amazonaws.com/user10-cna-mypage:v1 .
+   도커에 이미지 푸시 docker push 052937454741.dkr.ecr.ap-northeast-2.amazonaws.com/user10-cna-mypage:v1
+
+--------------------------------------------------------------------------------------------------------------------------
+[우분투 환경에서 kafka 설치]
+curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
+kubectl --namespace kube-system create sa tiller      # helm 의 설치관리자를 위한 시스템 사용자 생성
+kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
+helm init --service-account tiller
+
+kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+
+helm repo add incubator http://storage.googleapis.com/kubernetes-charts-incubator
+helm repo update
+helm install --name my-kafka --namespace kafka incubator/kafka
+
+1. watch kubectl get all -n kafka (카프카 설치 watch)
+
+2. istio 설치
+  curl -L https://git.io/getLatestIstio | ISTIO_VERSION=1.4.5 sh -
+  cd istio-1.4.5
+  export PATH=$PWD/bin:$PATH (export PATH=$PWD/bin:$PATH:/usr/local/:/usr/local/bin)
+  for i in install/kubernetes/helm/istio-init/files/crd*yaml; do kubectl apply -f $i; done
+  kubectl apply -f install/kubernetes/istio-demo.yaml
+  kubectl get pod -n istio-system
+
+3. Lab. Circuit Breaking
+  - Istio가 활성화된 네임스페이스 생성 
+    kubectl create namespace istio-cb-ns
+    kubectl label namespace istio-cb-ns istio-injection=enabled 
+    kubectl get ns istio-cb-ns -o yaml (확인)
+
+4. [CB 유스케이스] #2. Load balancing pool의 인스턴스 상태에 기반한 Circuit Breaker
+  - kubectl get all -n istio-cb-ns
+  - kubectl logs -f hello-server-2 -c hello-server-2 -n istio-cb-ns (트러블 슈팅 2번째 방법)
+
+5. istio-cb-ns namespace를 만들고, 거따가 order 컨테이너를 띄워라~ (image는 내꺼)
+  - nano deployment.yml -> namespace: istio-cb-ns, images: 052937454741.dkr.ecr.ap-northeast-2.amazonaws.com/user10-cna-mypage:v1)
+  - kubectl create -f deployment.yml
+  (확인)
+  - kubectl get pod -n istio-cb-ns
+  - kubectl get all -n istio-cb-ns -> name확인
+  - kubectl logs pod/order-bf8cb4885-jfxbq -c order -n istio-cb-ns
+
+
+6. 이벤트 수신하기
+  - kubectl -n kafka exec -ti my-kafka-0 -- /usr/bin/kafka-console-consumer --bootstrap-server my-kafka:9092 --topic demo --from-beginning (order 확인용)
+ - root@httpie:/# http http://order:8080/
+ - root@httpie:/# http http://order:8080/orders productId="1001" qty=10
+
+
+kubectl create deploy cna-gateway --image=052937454741.dkr.ecr.ap-northeast-2.amazonaws.com/user10-cna-gateway:v1 -n istio-cb-ns
+kubectl expose deploy cna-gateway --type=LoadBalancer --port=8080 -n istio-cb-ns
+http a9a13e6d7bb8b475295d6d388e592561-1284350562.ap-northeast-2.elb.amazonaws.com:8080/orders productId=1002 qty=50
+
+
