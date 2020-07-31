@@ -1,4 +1,7 @@
+
 ## 참고 URL
+[AWS Login URL](https://skccaws.signin.aws.amazon.com/console)
+
 [https://github.com/event-storming/docs](https://github.com/event-storming/docs)
 
 [http://msaschool.io](http://msaschool.io)
